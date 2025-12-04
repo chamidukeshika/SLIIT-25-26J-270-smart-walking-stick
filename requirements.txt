@@ -1,0 +1,5 @@
+# Minimal requirements for components/gait_instability/predict.py
+pandas
+numpy
+scikit-learn
+joblib
