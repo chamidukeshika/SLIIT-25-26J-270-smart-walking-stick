@@ -1,21 +1,3 @@
-"""Small gait instability / fall risk prediction helper.
-
-This script is intentionally small and self-contained. It provides two
-convenience functions:
-
-- train_and_save(csv_path, model_path): trains a simple LogisticRegression
-  model on a CSV file (expects a binary column named 'fall_risk') and saves
-  the model with joblib.
-- predict_from_dict(model_path, sample_dict): loads a saved model and
-  returns a prediction for a single sample represented as a dict of features.
-
-Usage (from repo root):
-  python components/gait_instability/predict.py --train
-  python components/gait_instability/predict.py --predict '{"acc_x":0.1, "acc_y":-0.2, ...}'
-
-This file is designed to be a small helper; integrate into your feature branch
-as needed.
-"""
 from __future__ import annotations
 
 import argparse
