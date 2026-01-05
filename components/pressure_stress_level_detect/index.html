@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Blind Stick Stress Monitor</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+
+      --bg0: #070a16;
+      --bg1: #0b1030;
+      --card: rgba(255, 255, 255, 0.06);
+      --card2: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.72);
+      --muted2: rgba(255, 255, 255, 0.58);
+
+      --primary: #7c6cff;
+      --primary2: #21d4fd;
+      --danger: #ff4c4c;
+      --success: #2ecc71;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      line-height: 1.4;
+      background:
+        radial-gradient(1200px 600px at 15% 5%, rgba(124, 108, 255, 0.35), transparent 60%),
+        radial-gradient(900px 520px at 85% 15%, rgba(33, 212, 253, 0.25), transparent 60%),
+        radial-gradient(1000px 700px at 70% 85%, rgba(255, 76, 76, 0.12), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height: 100vh;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 18px 16px;
+      text-align: center;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(18px, 2.4vw, 22px);
+      background: rgba(7, 10, 22, 0.75);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 16px 0;
+    }
+
+    .tab {
+      user-select: none;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+
+    .tab:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .tab.active {
+      color: rgba(255, 255, 255, 0.96);
+      border-color: rgba(124, 108, 255, 0.65);
+      background: linear-gradient(135deg, rgba(124, 108, 255, 0.95), rgba(33, 212, 253, 0.55));
+      box-shadow: 0 10px 30px rgba(124, 108, 255, 0.25);
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px 16px 28px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.24px;
+      color: rgba(255, 255, 255, 0.82);
+      text-transform: none;
+    }
+
+    .hint {
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(2, 6, 23, 0.55);
+      color: rgba(255, 255, 255, 0.92);
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.42);
+    }
+
+    input:focus {
+      border-color: rgba(33, 212, 253, 0.65);
+      box-shadow: 0 0 0 4px rgba(33, 212, 253, 0.12);
+      background: rgba(2, 6, 23, 0.72);
+    }
+
+    button {
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .btn-main {
+      color: rgba(255, 255, 255, 0.95);
+      background: linear-gradient(135deg, rgba(124, 108, 255, 1), rgba(33, 212, 253, 0.65));
+      box-shadow: 0 14px 36px rgba(124, 108, 255, 0.18);
+    }
+
+    .btn-main:hover {
+      filter: brightness(1.04);
+      box-shadow: 0 18px 46px rgba(124, 108, 255, 0.24);
+    }
+
+    .btn-alt {
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .actions .btn-main {
+      margin-left: auto;
+    }
+
+    .result {
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .result::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+    }
+
+    .calm {
+      color: var(--success);
+    }
+
+    .calm::before {
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.14);
+    }
+
+    .stress {
+      color: var(--danger);
+    }
+
+    .stress::before {
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(255, 76, 76, 0.14);
+    }
+
+    #explain {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    li {
+      margin: 8px 0;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 760px) {
+      .tabs {
+        padding-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .actions .btn-main {
+        margin-left: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>Blind Stick Stress Detection Dashboard</header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('input')">Live Prediction</div>
+    <div class="tab" onclick="showTab('dashboard')">Caregiver View</div>
+  </div>
+
+  <div class="container">
+
+    <!-- INPUT TAB -->
+    <div id="input" class="tab-content">
+      <div class="card">
+        <h3>Enter Sensor Values</h3>
+        <div class="grid">
+          <div class="field">
+            <label for="ax">Accel X <span class="hint">(m/s²)</span></label>
+            <input id="ax" value="0.15" placeholder="e.g., 0.15">
+          </div>
+          <div class="field">
+            <label for="ay">Accel Y <span class="hint">(m/s²)</span></label>
+            <input id="ay" value="-0.05" placeholder="e.g., -0.05">
+          </div>
+          <div class="field">
+            <label for="az">Accel Z <span class="hint">(m/s²)</span></label>
+            <input id="az" value="9.75" placeholder="e.g., 9.75">
+          </div>
+          <div class="field">
+            <label for="gx">Gyro X <span class="hint">(deg/s)</span></label>
+            <input id="gx" value="0.8" placeholder="e.g., 0.8">
+          </div>
+          <div class="field">
+            <label for="gy">Gyro Y <span class="hint">(deg/s)</span></label>
+            <input id="gy" value="-0.3" placeholder="e.g., -0.3">
+          </div>
+          <div class="field">
+            <label for="gz">Gyro Z <span class="hint">(deg/s)</span></label>
+            <input id="gz" value="0.2" placeholder="e.g., 0.2">
+          </div>
+          <div class="field">
+            <label for="grip">Grip Pressure <span class="hint">(sensor raw)</span></label>
+            <input id="grip" value="250" placeholder="e.g., 250">
+          </div>
+        </div>
+        <br>
+        <div class="actions">
+          <button class="btn-alt" onclick="fillSample('calm')" type="button">Load Calm Sample</button>
+          <button class="btn-alt" onclick="fillSample('stress')" type="button">Load Stress Sample</button>
+          <button class="btn-main" onclick="predict()" type="button">Connect & Predict</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Prediction Output</h3>
+        <div id="prediction" class="result calm">Waiting...</div>
+        <p id="explain"></p>
+      </div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div id="dashboard" class="tab-content hidden">
+      <div class="card">
+        <h3>Daily Stress Pattern</h3>
+        <canvas id="dailyChart"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Caregiver Suggestions</h3>
+        <ul>
+          <li>⚠ High stress detected most evenings (6–8 PM)</li>
+          <li>🧠 Suggest calm walks or voice reassurance</li>
+          <li>📞 Monitor Tuesdays & Fridays closely</li>
+          <li>💡 Consider vibration feedback earlier</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let characteristic;
+
+    async function predict() {
+      const data = [
+        ax.value, ay.value, az.value,
+        gx.value, gy.value, gz.value, grip.value
+      ].join(",");
+
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ name: "ESP32-Stress-Detector" }],
+        optionalServices: ["12345678-1234-1234-1234-123456789abc"]
+      });
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService("12345678-1234-1234-1234-123456789abc");
+      characteristic = await service.getCharacteristic("abcdefab-1234-5678-1234-abcdefabcdef");
+
+      await characteristic.writeValue(new TextEncoder().encode(data));
+      const response = await characteristic.readValue();
+
+      const result = new TextDecoder().decode(response);
+      const pred = document.getElementById("prediction");
+
+      pred.innerText = result;
+      pred.className = "result " + (result === "STRESS" ? "stress" : "calm");
+
+      document.getElementById("explain").innerText =
+        result === "STRESS"
+          ? "High pressure + unstable motion detected."
+          : "Motion and grip are stable.";
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+
+      document.querySelector(`[onclick*="${tab}"]`).classList.add('active');
+      document.getElementById(tab).classList.remove('hidden');
+    }
+
+    // Quick-fill helpers (does not affect BLE/predict flow)
+    function fillSample(mode) {
+      const samples = {
+        calm: {
+          // Calm walking: stable acceleration close to gravity, low gyro rotation, moderate grip
+          ax: 0.15,
+          ay: -0.05,
+          az: 9.75,
+          gx: 0.8,
+          gy: -0.3,
+          gz: 0.2,
+          grip: 220
+        },
+        stress: {
+          // Stressed: erratic movement, high rotation, strong grip
+          ax: 2.5,
+          ay: -1.8,
+          az: 11.2,
+          gx: 15.5,
+          gy: -12.3,
+          gz: 8.7,
+          grip: 420
+        }
+      };
+
+      const s = samples[mode] || samples.calm;
+      ax.value = s.ax;
+      ay.value = s.ay;
+      az.value = s.az;
+      gx.value = s.gx;
+      gy.value = s.gy;
+      gz.value = s.gz;
+      grip.value = s.grip;
+
+      const pred = document.getElementById('prediction');
+      if (pred) {
+        pred.innerText = 'Waiting...';
+        pred.className = 'result calm';
+      }
+      const explain = document.getElementById('explain');
+      if (explain) explain.innerText = 'Sample values loaded. Press “Connect & Predict”.';
+    }
+
+    // Demo graph
+    new Chart(document.getElementById("dailyChart"), {
+      type: 'scatter',
+      data: (() => {
+        const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const HOURS = [6, 8, 10, 12, 14, 16, 18, 20, 22];
+
+        // Same realistic sample pattern used in caregiver dashboard
+        const stressGrid = [
+          [0.18, 0.22, 0.28, 0.35, 0.42, 0.55, 0.78, 0.72, 0.50],
+          [0.16, 0.20, 0.26, 0.30, 0.38, 0.48, 0.62, 0.58, 0.42],
+          [0.17, 0.21, 0.25, 0.33, 0.40, 0.52, 0.70, 0.64, 0.45],
+          [0.20, 0.24, 0.30, 0.38, 0.46, 0.60, 0.86, 0.80, 0.58],
+          [0.19, 0.24, 0.29, 0.36, 0.44, 0.56, 0.74, 0.69, 0.52],
+          [0.12, 0.14, 0.18, 0.24, 0.30, 0.38, 0.48, 0.44, 0.33],
+          [0.13, 0.15, 0.19, 0.26, 0.32, 0.40, 0.52, 0.47, 0.36]
+        ];
+
+        const clamp01 = (x) => Math.min(1, Math.max(0, x));
+        const stressColor = (value) => {
+          const v = clamp01(value);
+          const r = Math.round(46 + (255 - 46) * v);
+          const g = Math.round(204 + (76 - 204) * v);
+          const b = Math.round(113 + (76 - 113) * v);
+          return `rgba(${r}, ${g}, ${b}, 0.85)`;
+        };
+        const hourLabel = (hour) => {
+          const h = Number(hour);
+          const suffix = h >= 12 ? 'PM' : 'AM';
+          const hh = ((h + 11) % 12) + 1;
+          return `${hh}${suffix}`;
+        };
+
+        const points = [];
+        for (let d = 0; d < stressGrid.length; d++) {
+          for (let h = 0; h < HOURS.length; h++) {
+            const s = stressGrid[d][h];
+            points.push({ x: HOURS[h], y: d, s });
+          }
+        }
+
+        // Update suggestions in the Caregiver View based on peaks
+        const dailyAvg = stressGrid.map(row => row.reduce((a, b) => a + b, 0) / row.length);
+        const worstDay = dailyAvg.map((v, i) => ({ day: i, v })).sort((a, b) => b.v - a.v)[0];
+        const bestDay = dailyAvg.map((v, i) => ({ day: i, v })).sort((a, b) => a.v - b.v)[0];
+        const peaks = [...points].sort((a, b) => b.s - a.s).slice(0, 1);
+        const top = peaks[0];
+        const HIGH = 0.72;
+
+        const rec = [];
+        if (top) {
+          rec.push(`⚠ Peak stress at <b>${DAYS[top.y]} ${hourLabel(top.x)}</b> (~${(top.s * 100).toFixed(0)}%). Try an alternate route, reduce street noise, and add a short rest break.`);
+        }
+        rec.push(`📅 Highest average day: <b>${DAYS[worstDay.day]}</b> (${(worstDay.v * 100).toFixed(0)}%). Plan extra support and slower pace.`);
+        rec.push(`✅ Best (calmest) day: <b>${DAYS[bestDay.day]}</b> (${(bestDay.v * 100).toFixed(0)}%). Good for longer practice routes.`);
+        rec.push(`🧘 When stress is above ~<b>${(HIGH * 100).toFixed(0)}%</b>, use “low stimulation mode”: pause, calm voice guidance, and avoid crowded areas.`);
+        rec.push(`🖐 If high stress matches stronger grip pressure, check comfort: handle height, strap tightness, or friction points.`);
+
+        const ul = document.querySelector('#dashboard ul');
+        if (ul) ul.innerHTML = rec.map(r => `<li>${r}</li>`).join('');
+
+        return {
+          datasets: [{
+            label: 'Stress intensity',
+            data: points,
+            parsing: false,
+            pointRadius: (ctx) => 5 + 10 * (ctx.raw?.s ?? 0),
+            pointHoverRadius: (ctx) => 7 + 12 * (ctx.raw?.s ?? 0),
+            pointBackgroundColor: (ctx) => stressColor(ctx.raw?.s ?? 0),
+            pointBorderColor: 'rgba(255,255,255,0.15)',
+            pointBorderWidth: 1
+          }]
+        };
+      })(),
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => {
+                const p = items[0]?.raw;
+                if (!p) return '';
+                const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                const hourLabel = (hour) => {
+                  const h = Number(hour);
+                  const suffix = h >= 12 ? 'PM' : 'AM';
+                  const hh = ((h + 11) % 12) + 1;
+                  return `${hh}${suffix}`;
+                };
+                return `${DAYS[p.y]} • ${hourLabel(p.x)}`;
+              },
+              label: (item) => `Stress: ${((item.raw?.s ?? 0) * 100).toFixed(0)}%`
+            }
+          }
+        },
+        scales: {
+          x: {
+            min: 6,
+            max: 22,
+            ticks: {
+              color: 'rgba(255,255,255,0.65)',
+              callback: (value) => {
+                const h = Number(value);
+                const suffix = h >= 12 ? 'PM' : 'AM';
+                const hh = ((h + 11) % 12) + 1;
+                return `${hh}${suffix}`;
+              }
+            },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            title: {
+              display: true,
+              text: 'Time of Day',
+              color: 'rgba(255,255,255,0.72)',
+              font: { weight: 'bold' }
+            }
+          },
+          y: {
+            min: -0.5,
+            max: 6.5,
+            ticks: {
+              stepSize: 1,
+              color: 'rgba(255,255,255,0.65)',
+              callback: (value) => (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][value] ?? '')
+            },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            title: {
+              display: true,
+              text: 'Day',
+              color: 'rgba(255,255,255,0.72)',
+              font: { weight: 'bold' }
+            }
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+
+</html>
